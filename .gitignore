@@ -3,5 +3,6 @@ build/
 vendor/
 rootfs/fs/
 rootfs/cache/
-rootfs/initramfs/
+rootfs/initramfs/*
+!rootfs/initramfs/init
 rootfs/alpine-minirootfs-*.tar.gz

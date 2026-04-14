@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>pocketlinux</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0c0c0c;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #status {
+            color: #888;
+            font: 13px monospace;
+            padding: 4px 8px;
+            background: #111;
+            border-bottom: 1px solid #222;
+        }
+        #terminal-container {
+            flex: 1;
+            padding: 4px;
+        }
+        .xterm { height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="status">booting...</div>
+    <div id="terminal-container"></div>
+
+    <!-- v86 screen container (hidden, required by v86) -->
+    <div id="screen_container" style="display:none">
+        <div style="white-space:pre;font:14px monospace;line-height:14px"></div>
+        <canvas></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script src="vendor/v86/build/libv86.js"></script>
+    <script>
+    "use strict";
+
+    window.onload = function() {
+        const statusEl = document.getElementById("status");
+
+        const term = new Terminal({
+            cursorBlink: true,
+            fontSize: 15,
+            fontFamily: "monospace",
+            theme: {
+                background: "#0c0c0c",
+                foreground: "#cccccc",
+                cursor: "#cccccc",
+            },
+        });
+
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(document.getElementById("terminal-container"));
+        fitAddon.fit();
+
+        window.addEventListener("resize", function() { fitAddon.fit(); });
+
+        const emulator = new V86({
+            wasm_path: "vendor/v86/build/v86.wasm",
+            memory_size: 128 * 1024 * 1024,
+            vga_memory_size: 2 * 1024 * 1024,
+            screen_container: document.getElementById("screen_container"),
+            bios: { url: "vendor/v86/bios/seabios.bin" },
+            vga_bios: { url: "vendor/v86/bios/vgabios.bin" },
+            bzimage: { url: "build/vmlinuz", async: false },
+            initrd: { url: "build/initramfs.img", async: false },
+            hda: { url: "build/rootfs.ext4", async: false },
+            cmdline: "console=ttyS0 rw root=/dev/sda init=/sbin/init tsc=reliable mitigations=off libata.dma=0",
+            autostart: true,
+            disable_keyboard: true,
+            disable_mouse: true,
+            disable_speaker: true,
+        });
+
+        // Connect serial output to xterm
+        emulator.add_listener("serial0-output-byte", function(byte) {
+            term.write(new Uint8Array([byte]));
+        });
+
+        // Connect xterm input to serial
+        term.onData(function(data) {
+            emulator.serial0_send(data);
+        });
+
+        // Status updates
+        emulator.add_listener("emulator-started", function() {
+            statusEl.textContent = "running";
+        });
+
+        emulator.add_listener("emulator-stopped", function() {
+            statusEl.textContent = "stopped";
+        });
+
+        // Focus terminal
+        term.focus();
+    };
+    </script>
+</body>
+</html>

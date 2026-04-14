@@ -7,6 +7,10 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 
+# Load disk modules
+insmod /lib/modules/sd_mod.ko
+insmod /lib/modules/ata_generic.ko
+
 # Load ext4 modules
 insmod /lib/modules/crc32c_generic.ko
 insmod /lib/modules/crc16.ko
@@ -14,11 +18,26 @@ insmod /lib/modules/mbcache.ko
 insmod /lib/modules/jbd2.ko
 insmod /lib/modules/ext4.ko
 
-# Wait for disk to appear
-sleep 1
+# Wait for /dev/sda to appear
+echo "Waiting for disk..."
+i=0
+while [ ! -b /dev/sda ] && [ $i -lt 30 ]; do
+    sleep 1
+    i=$((i + 1))
+done
+
+if [ ! -b /dev/sda ]; then
+    echo "FATAL: /dev/sda not found"
+    exec sh
+fi
 
 # Mount root filesystem
 mount -t ext4 /dev/sda /mnt
+
+if [ $? -ne 0 ]; then
+    echo "FATAL: failed to mount root"
+    exec sh
+fi
 
 # Switch to real root
 exec switch_root /mnt /sbin/init

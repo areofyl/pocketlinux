@@ -1,0 +1,24 @@
+#!/bin/busybox sh
+
+/bin/busybox mkdir -p /bin /sbin /usr/bin /usr/sbin
+/bin/busybox --install -s
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+# Load ext4 modules
+insmod /lib/modules/crc32c_generic.ko
+insmod /lib/modules/crc16.ko
+insmod /lib/modules/mbcache.ko
+insmod /lib/modules/jbd2.ko
+insmod /lib/modules/ext4.ko
+
+# Wait for disk to appear
+sleep 1
+
+# Mount root filesystem
+mount -t ext4 /dev/sda /mnt
+
+# Switch to real root
+exec switch_root /mnt /sbin/init

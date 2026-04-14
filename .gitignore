@@ -1,0 +1,7 @@
+# Downloaded/generated artifacts
+build/
+vendor/
+rootfs/fs/
+rootfs/cache/
+rootfs/initramfs/
+rootfs/alpine-minirootfs-*.tar.gz

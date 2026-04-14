@@ -73,7 +73,7 @@
             vga_bios: { url: "vendor/v86/bios/vgabios.bin" },
             bzimage: { url: "build/vmlinuz", async: false },
             initrd: { url: "build/initramfs.img", async: false },
-            hda: { url: "build/rootfs.ext4", async: false },
+            hda: { url: "build/rootfs.ext4", async: false, size: 150 * 1024 * 1024 },
             cmdline: "console=ttyS0 rw root=/dev/sda init=/sbin/init tsc=reliable mitigations=off libata.dma=0",
             autostart: true,
             disable_keyboard: true,
